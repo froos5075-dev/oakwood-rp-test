@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Oakwood RP — تجربة أولية</title>
+<style>
+:root{--glass:rgba(10,16,25,.68);--line:rgba(255,255,255,.18);--txt:#f4f7fb;--accent:#7be0b1}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#0a1220;color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;touch-action:none}
+#game{position:fixed;inset:0}
+canvas{display:block;width:100%;height:100%}
+#top{position:fixed;top:env(safe-area-inset-top,10px);left:12px;right:12px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;pointer-events:none}
+.panel{background:var(--glass);border:1px solid var(--line);border-radius:15px;padding:9px 12px;backdrop-filter:blur(12px);box-shadow:0 8px 28px #0003}
+#brand{font-weight:800;letter-spacing:.4px;font-size:14px}#sub{font-size:10px;color:#c4d0dc;margin-top:3px}
+#status{text-align:left;font-size:11px;line-height:1.65}
+#help{position:fixed;top:74px;left:50%;transform:translateX(-50%);background:#07101bc9;border:1px solid #ffffff25;border-radius:999px;padding:7px 12px;font-size:11px;white-space:nowrap;pointer-events:none}
+#toast{position:fixed;top:116px;left:50%;transform:translateX(-50%);background:#08111ddd;border:1px solid #ffffff24;border-radius:12px;padding:9px 13px;font-size:12px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90%;text-align:center}
+#controls{position:fixed;left:0;right:0;bottom:calc(12px + env(safe-area-inset-bottom,0px));display:flex;justify-content:space-between;align-items:flex-end;padding:0 14px;gap:12px;pointer-events:none}
+#stick{width:124px;height:124px;border-radius:50%;background:#07101b88;border:1px solid #ffffff35;position:relative;pointer-events:auto;touch-action:none;box-shadow:0 8px 30px #0003}
+#knob{position:absolute;width:48px;height:48px;border-radius:50%;left:37px;top:37px;background:#e9f4ff55;border:1px solid #ffffff80;box-shadow:inset 0 0 0 4px #ffffff0b}
+.rightControls{display:grid;grid-template-columns:repeat(2,58px);gap:9px;pointer-events:auto;align-items:end}
+.ctrl{height:54px;width:58px;border-radius:17px;border:1px solid #ffffff40;background:#09121fc9;color:white;font-size:11px;font-weight:700;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;box-shadow:0 5px 18px #0003;touch-action:manipulation}
+.ctrl b{font-size:20px;line-height:20px}.ctrl:active{background:#1b3942}
+#interact{grid-column:span 2;width:125px;height:43px;justify-self:end;background:#b7f3d7;color:#10231c;border:0}
+#lookhint{position:fixed;right:12px;top:50%;font-size:10px;color:#ffffffa8;writing-mode:vertical-rl;pointer-events:none}
+#start{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#06101dc9,#06101d88);padding:20px;z-index:5}
+#start .card{width:min(440px,100%);background:#0a1423ed;border:1px solid #ffffff26;border-radius:24px;padding:24px;box-shadow:0 20px 80px #0007}
+#start h1{margin:0 0 7px;font-size:27px;letter-spacing:.5px}#start p{color:#cad4df;font-size:13px;line-height:1.7;margin:8px 0 18px}
+#start button{width:100%;padding:15px;border:0;border-radius:14px;background:var(--accent);color:#092017;font-size:15px;font-weight:800}
+.tags{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 18px}.tag{font-size:10px;padding:6px 9px;border:1px solid #ffffff20;border-radius:999px;color:#d7e4ef}
+#corner{position:fixed;right:12px;bottom:164px;font-size:10px;color:#ffffffa8;pointer-events:none}
+@media(min-width:800px){#controls{padding:0 26px 16px}#stick{width:140px;height:140px}#knob{left:44px;top:44px}.rightControls{grid-template-columns:repeat(2,64px)}.ctrl{width:64px;height:58px}}
+</style>
+</head>
+<body>
+<div id="game"></div>
+<div id="top">
+  <div class="panel"><div id="brand">OAKWOOD <span style="color:#7be0b1">RP</span></div><div id="sub">نسخة تجريبية معاد تنظيمها • v3</div></div>
+  <div class="panel" id="status"><div>💵 <span id="money">500</span>$</div><div>🚶 <span id="mode">مشاة</span></div></div>
+</div>
+<div id="help">حرّك العصا للمشي • اسحب الشاشة لتدوير الكاميرا</div>
+<div id="toast"></div><div id="nearby" style="position:fixed;left:50%;bottom:170px;transform:translateX(-50%);background:#08111ddd;border:1px solid #ffffff30;border-radius:12px;padding:8px 12px;font-size:12px;display:none;pointer-events:none">اقترب للتفاعل</div>
+<div id="lookhint">اسحب لتدوير الكاميرا</div>
+<div id="corner">Oakwood RP • Prototype v3</div>
+<div id="controls">
+  <div id="stick"><div id="knob"></div></div>
+  <div class="rightControls">
+    <button class="ctrl" id="view"><b>◉</b>الكاميرا</button>
+    <button class="ctrl" id="jump"><b>↑</b>قفز</button>
+    <button class="ctrl" id="run"><b>»</b>ركض</button>
+    <button class="ctrl" id="horn"><b>♫</b>بوق</button><button class="ctrl" id="time"><b>☾</b>ليل/نهار</button>
+    <button class="ctrl" id="interact"><b>↔</b><span id="interactText">ركوب السيارة</span></button>
+  </div>
+</div>
+<div id="start"><div class="card">
+  <h1>Oakwood <span style="color:#7be0b1">RP</span></h1>
+  <p>نسخة تجريبية معاد تنظيمها: اختبر المشي والكاميرا والقيادة، وجرّب التفاعل مع السيارة والبقالة والمطعم. بعض التفاعلات مبسطة وليست أنظمة كاملة.</p>
+  <div class="tags"><span class="tag">منظور أول وثالث</span><span class="tag">تحكم لمس</span><span class="tag">سيارة تجريبية</span><span class="tag">مدينة ليلية</span></div>
+  <button id="play">دخول المدينة</button>
+  <p style="font-size:10px;margin-bottom:0">تحتاج اتصال إنترنت لتحميل محرك الرسوم ثلاثي الأبعاد.</p>
+</div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(() => {
+if(!window.THREE){document.querySelector('#start p').textContent='تعذّر تحميل محرك الرسوم. تأكد من اتصال الإنترنت ثم أعد فتح الملف.';return;}
+const scene=new THREE.Scene(); scene.background=new THREE.Color(0x071426); scene.fog=new THREE.Fog(0x071426,48,180);
+const camera=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,.1,500);
+const renderer=new THREE.WebGLRenderer({antialias:true, powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.6)); renderer.setSize(innerWidth,innerHeight); renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.outputEncoding=THREE.sRGBEncoding; renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.08;
+document.querySelector('#game').appendChild(renderer.domElement);
+scene.add(new THREE.HemisphereLight(0x9fc8ff,0x243023,1.3));
+const moon=new THREE.DirectionalLight(0xc8dcff,1.15); moon.position.set(-25,45,20); moon.castShadow=true; moon.shadow.mapSize.set(1024,1024); scene.add(moon);
+function mat(color,rough=.85,metal=0){return new THREE.MeshStandardMaterial({color,roughness:rough,metalness:metal});}
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(260,260),mat(0x344b3d));ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
+function box(w,h,d,x,y,z,m,shadow=true){const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);o.castShadow=shadow;o.receiveShadow=true;scene.add(o);return o;}
+const roadmat=mat(0x222a33),side=mat(0x8d9695),line=mat(0xd9d4ad),grass=mat(0x496448),brick=mat(0x856b5b),cream=mat(0xb7aa91),blue=mat(0x657e91),white=mat(0xc9c7bc),glass=new THREE.MeshStandardMaterial({color:0x9ac8d7,roughness:.25,metalness:.15});
+box(260,.08,16,0,.02,0,roadmat);box(16,.08,260,0,.025,0,roadmat);
+for(let i=-120;i<=120;i+=8){box(.12,.015,2.8,i,.075,0,line,false);box(2.8,.015,.12,0,.075,i,line,false);}
+for(let sideSign of [-1,1]){box(260,.12,2,0,.08,sideSign*9,side,false);box(2,.12,260,sideSign*9,.08,0,side,false);box(260,.09,5,0,.04,sideSign*13,grass,false);box(5,.09,260,sideSign*13,.04,0,grass,false);}
+function makeHouse(x,z,wall,roof,front=true){
+  const w=7+Math.random()*3,d=6+Math.random()*3,h=4+Math.random()*1.8;
+  box(w,h,d,x,h/2+.12,z,mat(wall)); houseZones.push({x,z,rx:w/2+.9,rz:d/2+.9});
+  const roofObj=box(w+1,1,d+1,x,h+.45,z,mat(roof));roofObj.rotation.z=(Math.random()-.5)*.06;
+  const frontZ=z+d/2+.035;
+  for(let wx of [-w*.27,w*.27]){box(1.1,1.25,.08,x+wx,1.9,frontZ,glass,false);box(1.2,.08,.12,x+wx,1.9,frontZ,white,false);box(.08,1.3,.12,x+wx,1.9,frontZ,white,false);}
+  box(1.05,2,.12,x,1.15,frontZ,mat(0x4b342a),false);
+  box(w+1,.16,d+1,x,.22,z,mat(0x6c6b60),false);
+  // porch
+  box(w*.48,.18,1.6,x,.5,z+d/2+.8,mat(0xb6a78d),false);
+  // small bushes
+  for(let k=-1;k<=1;k++){const bush=new THREE.Mesh(new THREE.SphereGeometry(.45,8,6),mat(0x355b3e));bush.position.set(x+k*1.15,.55,z+d/2+1.8);bush.castShadow=true;scene.add(bush);}
+}
+for(let z=-48;z<=48;z+=17){for(let s of [-1,1]){makeHouse(s*20,z,[0x9b7863,0xb9b29d,0x738c98,0x9d9b83][Math.floor(Math.random()*4)],[0x383e48,0x57433c,0x404b4b][Math.floor(Math.random()*3)]);}}
+function makeShop(x,z,name,color){
+ const b=box(12,6,8,x,3,z,mat(color));box(12.3,.5,8.3,x,6.25,z,mat(0x30353d));
+ box(8,1.25,.15,x,4.5,z+4.05,mat(0x173e42),false);
+ for(let i=-2;i<=2;i++)box(.05,1.1,.05,x+i*1.4,4.5,z+4.15,white,false);
+ box(2.5,2,.16,x,1.2,z+4.1,mat(0x47535c),false);
+ const sign=box(8,.75,.18,x,5.7,z+4.15,mat(0x183e39),false);
+ // text sign sprite
+ const cv=document.createElement('canvas');cv.width=512;cv.height=128;const ctx=cv.getContext('2d');ctx.fillStyle='#163b37';ctx.fillRect(0,0,512,128);ctx.fillStyle='#f5f1d7';ctx.font='bold 48px Arial';ctx.textAlign='center';ctx.fillText(name,256,82);
+ const tex=new THREE.CanvasTexture(cv);const sm=new THREE.MeshBasicMaterial({map:tex,transparent:false});const sp=new THREE.Mesh(new THREE.PlaneGeometry(7.8,.7),sm);sp.position.set(x,5.7,z+4.26);scene.add(sp);
+}
+makeShop(-23,-2,'MARKET',0x9c8772);makeShop(23,2,'DINER',0x8e6352);
+function tree(x,z){const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.18,.25,2.4,7),mat(0x55402e));trunk.position.set(x,1.2,z);trunk.castShadow=true;scene.add(trunk);for(let i=0;i<3;i++){const crown=new THREE.Mesh(new THREE.SphereGeometry(1.2-i*.13,8,7),mat([0x31573e,0x3d6845,0x426b47][i]));crown.position.set(x+(Math.random()-.5)*.6,2.7+i*.6,z);crown.castShadow=true;scene.add(crown);}}
+for(let z=-55;z<=55;z+=8){tree(-12,z);tree(12,z);}
+function lamp(x,z){const pole=box(.12,5,.12,x,2.5,z,mat(0x303944));box(.7,.18,.25,x,5,z,mat(0xe7d9a1));const l=new THREE.PointLight(0xffd58a,1.5,13,2);l.position.set(x,4.8,z);scene.add(l);}
+for(let z=-48;z<=48;z+=16){lamp(-8,z);lamp(8,z);}
+function stars(){const geo=new THREE.BufferGeometry(),arr=[];for(let i=0;i<900;i++){const a=Math.random()*Math.PI*2, r=100+Math.random()*90;arr.push(Math.cos(a)*r,25+Math.random()*95,Math.sin(a)*r);}geo.setAttribute('position',new THREE.Float32BufferAttribute(arr,3));const pts=new THREE.Points(geo,new THREE.PointsMaterial({color:0xeaf2ff,size:.65,transparent:true,opacity:.9}));scene.add(pts);}
+stars();
+const moonMesh=new THREE.Mesh(new THREE.SphereGeometry(3,24,24),new THREE.MeshBasicMaterial({color:0xe1e8f1}));moonMesh.position.set(-55,65,-95);scene.add(moonMesh);
+// player group
+const player=new THREE.Group();scene.add(player);
+const skin=mat(0xd5a47e),hood=mat(0x202832),pants=mat(0x34404c),shoe=mat(0x171c21);
+const torso=box(.8,1.15,.42,0,1.65,0,hood);torso.parent=player;scene.remove(torso);player.add(torso);torso.position.set(0,1.55,0);
+const head=new THREE.Mesh(new THREE.SphereGeometry(.29,12,10),skin);head.position.set(0,2.35,0);head.castShadow=true;player.add(head);
+const hoodBack=new THREE.Mesh(new THREE.SphereGeometry(.33,12,10),hood);hoodBack.scale.set(1,1,.65);hoodBack.position.set(0,2.3,-.13);player.add(hoodBack);
+const leg1=box(.28,.85,.3,-.22,.55,0,pants),leg2=box(.28,.85,.3,.22,.55,0,pants);player.add(leg1,leg2);leg1.position.set(-.22,.55,0);leg2.position.set(.22,.55,0);
+const arm1=box(.24,.85,.25,-.55,1.6,0,hood),arm2=box(.24,.85,.25,.55,1.6,0,hood);player.add(arm1,arm2);arm1.position.set(-.55,1.55,0);arm2.position.set(.55,1.55,0);
+player.position.set(0,0,5);player.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});
+// car
+const car=new THREE.Group();scene.add(car);car.position.set(4,0,2);
+const carbody=box(2.1,.65,4.2,0,.75,0,mat(0x315b67,.4,.25));car.add(carbody);carbody.position.set(0,.75,0);
+const cabin=box(1.55,.72,1.9,0,1.4,-.15,glass);car.add(cabin);cabin.position.set(0,1.35,-.15);
+const wheelMat=mat(0x15191d,.7),wheels=[];
+for(let x of [-1.05,1.05])for(let z of [-1.35,1.35]){const w=new THREE.Mesh(new THREE.CylinderGeometry(.38,.38,.22,14),wheelMat);w.rotation.z=Math.PI/2;w.position.set(x,.42,z);car.add(w);wheels.push(w);}
+const headlampmat=new THREE.MeshBasicMaterial({color:0xffedc0});for(let x of [-.7,.7]){const hl=box(.35,.18,.05,x,.8,2.12,headlampmat,false);car.add(hl);hl.position.set(x,.8,2.12);}
+let inCar=false, firstPerson=false, yaw=0,camYaw=0,camPitch=.18,stickX=0,stickY=0,run=false,velY=0,onGround=true,carSpeed=0,steer=0; const houseZones=[]; let insideLocation='';
+const toast=document.querySelector('#toast');
+function say(t){toast.textContent=t;toast.style.opacity=1;clearTimeout(say.timer);say.timer=setTimeout(()=>toast.style.opacity=0,1800);}
+function updateStatus(){document.querySelector('#mode').textContent=inCar?'قيادة': 'مشاة';document.querySelector('#interactText').textContent=inCar?'النزول من السيارة':'ركوب السيارة';document.querySelector('#horn').style.opacity=inCar?'1':'.55';}
+function nearestCar(){return player.position.distanceTo(car.position)<4.4;}
+document.querySelector('#interact').onclick=()=>{
+ if(inCar){inCar=false;player.visible=true;player.position.copy(car.position).add(new THREE.Vector3(2.2,0,0));carSpeed=0;say('نزلت من السيارة');}
+ else if(nearestCar()){inCar=true;player.visible=false;carSpeed=0;say('ركبت السيارة — اسحب العصا للتوجيه والتسارع');}
+ else if(Math.hypot(player.position.x+23,player.position.z+2)<9){insideLocation='MARKET';player.position.set(-23,0,10);say('دخلت البقالة — تجربة داخلية بسيطة');}
+ else if(Math.hypot(player.position.x-23,player.position.z-2)<9){insideLocation='DINER';player.position.set(23,0,10);say('دخلت المطعم — تجربة داخلية بسيطة');}
+ else if(Math.hypot(player.position.x,player.position.z-5)<5){insideLocation='HOME';player.position.set(0,0,12);say('وصلت إلى منطقة البيت التجريبية');}
+ else say('اقترب من السيارة أو المحل ثم اضغط تفاعل');
+ updateStatus();
+};
+document.querySelector('#view').onclick=()=>{firstPerson=!firstPerson;say(firstPerson?'منظور الشخص الأول':'منظور الشخص الثالث');};
+let daytime=false;
+document.querySelector('#time').onclick=()=>{
+ daytime=!daytime;
+ scene.background.set(daytime?0x9ac8ef:0x071426); scene.fog.color.set(daytime?0x9ac8ef:0x071426);
+ moon.intensity=daytime?2.1:1.15; moonMesh.visible=!daytime;
+ say(daytime?'تم تغيير الوقت إلى النهار':'تم تغيير الوقت إلى الليل');
+};
+document.querySelector('#jump').onclick=()=>{if(!inCar&&onGround){velY=6.2;onGround=false;}};
+document.querySelector('#run').onpointerdown=()=>run=true;document.querySelector('#run').onpointerup=()=>run=false;document.querySelector('#run').onpointercancel=()=>run=false;
+document.querySelector('#horn').onclick=()=>say(inCar?'بيب بيب! (بوق تجريبي)':'اركب السيارة أولًا');
+const stick=document.querySelector('#stick'),knob=document.querySelector('#knob');let stickId=null;
+function setStick(e){const r=stick.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;let dx=e.clientX-cx,dy=e.clientY-cy,max=43,l=Math.hypot(dx,dy);if(l>max){dx=dx/l*max;dy=dy/l*max;}stickX=dx/max;stickY=dy/max;knob.style.transform=`translate(${dx}px,${dy}px)`;}
+stick.addEventListener('pointerdown',e=>{stickId=e.pointerId;stick.setPointerCapture(stickId);setStick(e);});
+stick.addEventListener('pointermove',e=>{if(e.pointerId===stickId)setStick(e);});
+function releaseStick(e){if(e.pointerId===stickId){stickId=null;stickX=stickY=0;knob.style.transform='translate(0,0)';}}
+stick.addEventListener('pointerup',releaseStick);stick.addEventListener('pointercancel',releaseStick);
+// camera drag anywhere outside controls
+let drag=null;
+renderer.domElement.addEventListener('pointerdown',e=>{drag={x:e.clientX,y:e.clientY,id:e.pointerId};});
+renderer.domElement.addEventListener('pointermove',e=>{if(!drag||drag.id!==e.pointerId)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;camYaw-=dx*.0045;camPitch=Math.max(-.18,Math.min(.52,camPitch+dy*.0023));drag.x=e.clientX;drag.y=e.clientY;});
+renderer.domElement.addEventListener('pointerup',()=>drag=null);renderer.domElement.addEventListener('pointercancel',()=>drag=null);
+document.querySelector('#play').onclick=()=>{document.querySelector('#start').style.display='none';say('أهلًا بك في Oakwood!');};
+function clampTown(o){o.x=Math.max(-32,Math.min(32,o.x));o.z=Math.max(-65,Math.min(65,o.z));}
+const clock=new THREE.Clock();
+function animate(){requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.04);
+if(inCar){
+  const throttle=-stickY; carSpeed+=(throttle*8.5-carSpeed*(Math.abs(throttle)>.08?.45:1.15))*dt;carSpeed=Math.max(-4.5,Math.min(10.5,carSpeed));
+  steer=stickX;if(Math.abs(carSpeed)>.15) car.rotation.y-=steer*carSpeed*.055*dt;
+  car.position.x+=Math.sin(car.rotation.y)*carSpeed*dt;car.position.z+=Math.cos(car.rotation.y)*carSpeed*dt;clampTown(car.position);
+  wheels.forEach(w=>w.rotation.x+=carSpeed*dt*1.8);
+}else{
+  const mag=Math.hypot(stickX,stickY);
+  if(mag>.08){const moveYaw=camYaw;const forward=new THREE.Vector3(-Math.sin(moveYaw),0,-Math.cos(moveYaw));const right=new THREE.Vector3(Math.cos(moveYaw),0,-Math.sin(moveYaw));const dir=forward.clone().multiplyScalar(-stickY).add(right.multiplyScalar(stickX));if(dir.length()>1)dir.normalize();const speed=run?7.5:4.2;player.position.addScaledVector(dir,speed*dt);clampTown(player.position);
+  for(const hz of houseZones){if(Math.abs(player.position.x-hz.x)<hz.rx && Math.abs(player.position.z-hz.z)<hz.rz){
+    const dx=player.position.x-hz.x, dz=player.position.z-hz.z;
+    if(Math.abs(dx)/hz.rx > Math.abs(dz)/hz.rz) player.position.x=hz.x+Math.sign(dx||1)*hz.rx;
+    else player.position.z=hz.z+Math.sign(dz||1)*hz.rz;
+  }}
+  yaw=Math.atan2(dir.x,dir.z);player.rotation.y=yaw;}
+  velY-=16*dt;player.position.y+=velY*dt;if(player.position.y<0){player.position.y=0;velY=0;onGround=true;}
+  const swing=Math.sin(performance.now()*.012)*(mag>.1?.35:0);leg1.rotation.x=swing;leg2.rotation.x=-swing;arm1.rotation.x=-swing*.65;arm2.rotation.x=swing*.65;
+}
+const target=inCar?car.position:player.position;const facing=inCar?car.rotation.y:yaw;
+const nearEl=document.querySelector('#nearby');
+if(!inCar){
+ const nearCar=nearestCar();
+ const nearMarket=Math.hypot(player.position.x+23,player.position.z+2)<9;
+ const nearDiner=Math.hypot(player.position.x-23,player.position.z-2)<9;
+ if(nearCar||nearMarket||nearDiner){nearEl.style.display='block';nearEl.textContent=nearCar?'اضغط «تفاعل» لركوب السيارة':nearMarket?'اضغط «تفاعل» لدخول البقالة':'اضغط «تفاعل» لدخول المطعم';}
+ else nearEl.style.display='none';
+}else nearEl.style.display='none';
+let desired;
+if(firstPerson){desired=target.clone().add(new THREE.Vector3(0,inCar?1.55:2.0,0));camera.position.copy(desired);camera.rotation.order='YXZ';camera.rotation.y=inCar?car.rotation.y+camYaw:camYaw;camera.rotation.x=camPitch-.08;}
+else{const dist=inCar?9:7.3;const angle=camYaw+(inCar?car.rotation.y:0);desired=target.clone().add(new THREE.Vector3(Math.sin(angle)*dist,3.4+camPitch*4,Math.cos(angle)*dist));camera.position.lerp(desired,1-Math.pow(.001,dt));camera.lookAt(target.x,target.y+(inCar?1.1:1.6),target.z);}
+if(firstPerson&&!inCar){camera.position.y=player.position.y+2.1;}
+renderer.render(scene,camera);
+}
+updateStatus();animate();
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+})();
+</script>
+</body></html>
